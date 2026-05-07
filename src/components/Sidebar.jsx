@@ -1,58 +1,55 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { MdOutlineSpaceDashboard, MdOutlinePeople, MdOutlineMenuBook, MdOutlineReceiptLong } from 'react-icons/md';
+import { NavLink } from "react-router-dom";
+import { 
+  MdDashboard, 
+  MdGroup, // Icon untuk Customer
+  MdLogout 
+} from "react-icons/md";
+
+// 1. Hanya menyisakan menu yang diinginkan
+const menuItems = [
+  { icon: MdDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: MdGroup, label: "Customer", path: "/customers" }, // Mengarah ke path customers
+];
 
 export default function Sidebar() {
-  const location = useLocation();
-
-  const menus = [
-    { name: 'Dashboard', path: '/dashboard', icon: <MdOutlineSpaceDashboard /> },
-    { name: 'Pelanggan', path: '/customers', icon: <MdOutlinePeople /> },
-    { name: 'Buku & Stok', path: '/stock', icon: <MdOutlineMenuBook /> },
-    { name: 'Transaksi', path: '/transactions', icon: <MdOutlineReceiptLong /> },
-  ];
+  
+  const linkClasses = ({ isActive }) =>
+    `flex items-center gap-3.5 px-4 py-3 rounded-lg transition-all duration-200 group ${
+      isActive
+        ? "bg-blue-500 text-white shadow-md shadow-blue-500/20 font-semibold"
+        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+    }`;
 
   return (
-    <aside className="w-72 bg-[#740909] text-white flex flex-col p-6 shadow-2xl z-50">
-      {/* Logo Branding */}
-      <div className="mb-12 px-4">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
-             <span className="text-red-700 font-black text-2xl">C</span>
+    <aside className="w-64 bg-white border-r border-gray-100 flex flex-col h-full sticky top-0 z-40">
+      
+      {/* Logo DashStack */}
+      <div className="p-6 border-b border-gray-100">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
+            <span className="text-white font-bold text-base">D</span>
           </div>
-          <h1 className="text-xl font-black tracking-tighter">CENDEKIA</h1>
+          <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
+            Dash<span className="text-blue-500"></span>
+          </span>
         </div>
-        <div className="h-[1px] w-full bg-red-400/20 mt-6"></div>
       </div>
 
-      {/* Menu List */}
-      <nav className="flex-1 space-y-3">
-        {menus.map((menu) => {
-          const isActive = location.pathname === menu.path;
-          return (
-            <Link
-              key={menu.path}
-              to={menu.path}
-              className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 ${
-                isActive
-                  ? 'bg-white text-red-800 shadow-lg shadow-black/20 translate-x-2 font-bold'
-                  : 'text-red-100 hover:bg-white/10'
-              }`}
-            >
-              <span className="text-2xl">{menu.icon}</span>
-              <span className="text-sm tracking-wide">{menu.name}</span>
-            </Link>
-          );
-        })}
+      {/* Navigation - Hanya Dashboard & Customer */}
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
+        {menuItems.map((item) => (
+          <NavLink key={item.path} to={item.path} className={linkClasses}>
+            <item.icon size={22} className="group-hover:scale-105 transition-transform" />
+            <span className="text-[14px] tracking-wide">{item.label}</span>
+          </NavLink>
+        ))}
       </nav>
 
-      {/* Upgrade Box Unik */}
-      <div className="bg-red-800/50 p-5 rounded-[1.5rem] border border-red-400/30">
-        <p className="text-xs text-red-200 leading-relaxed">
-          Punya kendala akses sistem?
-        </p>
-        <button className="mt-3 w-full bg-white text-red-800 py-2 rounded-xl text-xs font-black shadow-md hover:bg-red-50">
-          HUBUNGI TEKNISI
+      {/* Bottom Actions - Hanya Logout */}
+      <div className="p-4 border-t border-gray-100 mt-auto">
+        <button className="flex items-center gap-3.5 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-500 transition-all duration-200 w-full group">
+          <MdLogout size={22} className="group-hover:scale-105 transition-transform" />
+          <span className="text-[14px] font-medium tracking-wide">Logout</span>
         </button>
       </div>
     </aside>

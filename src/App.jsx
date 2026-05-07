@@ -1,46 +1,60 @@
-import React, { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import MainLayouts from "./layouts/MainLayout";
-import AuthLayout from "./layouts/AuthLayout";
+import { Routes, Route, Navigate } from 'react-router-dom';
 
-// Loading Fallback
-const Loading = () => (
-  <div className="h-screen w-full flex items-center justify-center bg-red-50">
-    <div className="flex flex-col items-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
-      <p className="mt-4 text-red-700 font-medium italic">Memuat Pustaka Cendekia...</p>
-    </div>
-  </div>
-);
+// Import Layouts (Pastikan path folderlayouts sudah benar di VS Code)
+import AuthLayout from './layouts/AuthLayout';
+import MainLayout from './layouts/MainLayout';
 
-// React Lazy Load Pages (Gunakan path relatif ./)
-const LoginPage = lazy(() => import("./pages/LoginPages"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
-const CustomersPage = lazy(() => import("./pages/CustomersPage"));
+// Import Pages (Pastikan path folder pages sudah benar di VS Code)
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Customers from './pages/Customers';
 
 function App() {
   return (
-    <Router>
-      <Suspense fallback={<Loading />}>
-        <Routes>
-          {/* RUTE AUTH (Login, Register, dll) */}
-          <Route path="/auth" element={<AuthLayout />}>
-            <Route path="login" element={<LoginPage />} />
-          </Route>
+    <Routes>
+      
+      {/* ========================================= */}
+      {/* 1. RUTE AUTH (Tanpa Sidebar & Header)       */}
+      {/* ========================================= */}
+      {/* Kita bungkus Login/Register dengan AuthLayout */}
+      <Route path="/login" element={
+        <AuthLayout>
+          <Login />
+        </AuthLayout>
+      } />
+      
+      {/* Tambahkan rute register di sini jika sudah buat filenya */}
+      {/* <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} /> */}
 
-          {/* RUTE UTAMA (Dashboard, Stock, dll) */}
-          <Route path="/" element={<MainLayouts />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="customers" element={<CustomersPage />} />
-            {/* Tambahkan rute lain di bawah ini */}
-          </Route>
 
-          {/* Redirect jika rute tidak ditemukan */}
-          <Route path="*" element={<Navigate to="/auth/login" replace />} />
-        </Routes>
-      </Suspense>
-    </Router>
+      {/* ========================================= */}
+      {/* 2. RUTE UTAMA (Nested Routes/Bersarang)   */}
+      {/* ========================================= */}
+      {/* MainLayout menjadi 'parent' (bingkai)      */}
+      <Route path="/" element={<MainLayout />}>
+        
+        {/* Rute anak (Child Routes)                     */}
+        {/* Saat diakses, komponen ini akan muncul di  */}
+        {/* dalam <Outlet /> pada MainLayout.         */}
+        
+        {/* Ini rute default saat user sukses login     */}
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        
+        {/* Halaman-halaman utama                       */}
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="customers" element={<Customers />} />
+        
+        {/* Tambahkan rute halaman lain di sini nanti */}
+        {/* <Route path="products" element={<Products />} /> */}
+      </Route>
+
+
+      {/* ========================================= */}
+      {/* 3. PROTEKSI (Catch-all)                  */}
+      {/* ========================================= */}
+      {/* Jika user ngetik path ngawur, lempar ke dashboard */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   );
 }
 
