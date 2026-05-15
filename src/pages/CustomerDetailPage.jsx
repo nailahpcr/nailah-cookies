@@ -1,72 +1,66 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Phone, MapPin, History } from 'lucide-react';
-import { customersData } from '../data/customers'; // Mengambil mock data
+import React from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { MdArrowBack, MdEmail, MdPhone, MdLocationOn } from "react-icons/md";
+import { customersData } from "../data/customers";
 
 const CustomerDetailPage = () => {
-  const { id } = useParams(); // Mengambil ID dari URL
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  // Cari data pelanggan berdasarkan ID dari parameter URL
-  const customer = customersData.find(c => c.id === parseInt(id));
+  // Cari data pelanggan berdasarkan ID dari URL
+  const customer = customersData.find((c) => c.id === parseInt(id));
 
   if (!customer) {
-    return <div className="p-10 text-center">Pelanggan tidak ditemukan.</div>;
+    return (
+      <div className="p-10 text-center">
+        <h2 className="text-xl font-bold">Pelanggan tidak ditemukan</h2>
+        <button onClick={() => navigate("/customers")} className="text-red-700 underline mt-4">
+          Kembali ke Daftar
+        </button>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <button 
         onClick={() => navigate(-1)} 
-        className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition"
+        className="flex items-center gap-2 text-slate-600 hover:text-red-700 transition-colors font-medium"
       >
-        <ArrowLeft size={20} /> Kembali
+        <MdArrowBack size={20} /> Kembali
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Kolom Kiri: Profil Singkat */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-24 h-24 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl font-bold mb-4">
-              {customer.name.charAt(0)}
-            </div>
-            <h2 className="text-xl font-bold text-gray-800">{customer.name}</h2>
-            <p className="text-indigo-600 font-medium mb-4">{customer.tier} Member</p>
-            
-            <div className="w-full space-y-3 text-sm text-gray-600 border-t pt-4">
-              <div className="flex items-center gap-3">
-                <Phone size={16} /> <span>+{customer.phone}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Mail size={16} /> <span>{customer.name.toLowerCase().replace(' ', '.')}@email.com</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <MapPin size={16} /> <span>Jakarta, Indonesia</span>
-              </div>
-            </div>
+      <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-6">
+          <div className="w-20 h-20 bg-red-100 text-red-700 rounded-full flex items-center justify-center text-3xl font-bold">
+            {customer.name.charAt(0)}
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-800">{customer.name}</h1>
+            <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-bold">
+              {customer.tier} Member
+            </span>
           </div>
         </div>
 
-        {/* Kolom Kanan: Aktivitas & Riwayat */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <History size={18} /> Riwayat Transaksi Terbaru
-            </h3>
-            <div className="space-y-4">
-              {/* Dummy Transaction List */}
-              {[1, 2].map((item) => (
-                <div key={item} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-semibold text-gray-800">Order #120{item}</p>
-                    <p className="text-xs text-gray-500">12 Mei 2026 • 14:20 WIB</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-gray-800 text-sm">Rp 1.250.000</p>
-                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Sukses</span>
-                  </div>
-                </div>
-              ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+          <div className="p-4 border border-slate-50 rounded-xl bg-slate-50/50">
+            <div className="flex items-center gap-3 text-slate-500 mb-2">
+              <MdPhone /> <span className="text-xs font-bold uppercase">Telepon</span>
             </div>
+            <p className="font-semibold text-slate-800">{customer.phone || "-"}</p>
+          </div>
+          <div className="p-4 border border-slate-50 rounded-xl bg-slate-50/50">
+            <div className="flex items-center gap-3 text-slate-500 mb-2">
+              <MdEmail /> <span className="text-xs font-bold uppercase">Email</span>
+            </div>
+            <p className="font-semibold text-slate-800">{customer.email || "-"}</p>
+          </div>
+          <div className="p-4 border border-slate-50 rounded-xl bg-slate-50/50">
+            <div className="flex items-center gap-3 text-slate-500 mb-2">
+              <MdLocationOn /> <span className="text-xs font-bold uppercase">Total Belanja</span>
+            </div>
+            <p className="font-bold text-red-700 text-lg">Rp {customer.totalSpend?.toLocaleString()}</p>
           </div>
         </div>
       </div>

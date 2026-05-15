@@ -6,8 +6,6 @@ import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter> {/* Bungkus di sini */}
       <App />
-    </BrowserRouter>
   </React.StrictMode>,
 )
