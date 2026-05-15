@@ -1,35 +1,31 @@
-import { HiOutlineSearch, HiOutlineBell, HiOutlineUserCircle } from "react-icons/hi";
+import { Bell, Search, UserCircle } from 'lucide-react';
 
-export default function Header() {
+const Header = () => {
   return (
-    <header className="h-20 px-8 flex items-center justify-between">
-      {/* Search Bar Minimalis */}
-      <div className="relative group w-80">
-        <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-red-300 group-focus-within:text-red-700 transition-colors" size={20} />
-        <input 
-          type="text" 
-          placeholder="Cari sesuatu di sini..." 
-          className="w-full bg-white border-none rounded-2xl py-3 pl-12 pr-4 shadow-sm focus:ring-2 focus:ring-red-200 outline-none text-sm transition-all italic text-slate-400"
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
+      <div className="relative w-64">
+        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+          <Search size={18} />
+        </span>
+        <input
+          type="text"
+          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+          placeholder="Cari data..."
         />
       </div>
-
-      {/* Profile & Notif */}
-      <div className="flex items-center gap-6">
-        <div className="relative cursor-pointer text-slate-400 hover:text-red-700 transition-colors">
-          <HiOutlineBell size={26} />
-          <span className="absolute top-0 right-0 w-3 h-3 bg-red-600 rounded-full border-2 border-[#FFF5F5]"></span>
-        </div>
-        
-        <div className="flex items-center gap-3 bg-white p-1.5 pr-4 rounded-full shadow-sm border border-red-50">
-          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-700 overflow-hidden">
-             <img src="https://avatar.iran.liara.run/public/30" alt="avatar" />
-          </div>
-          <div>
-            <p className="text-xs font-black text-slate-800">Admin Cendekia</p>
-            <p className="text-[10px] text-red-500 font-bold uppercase">Superuser</p>
-          </div>
+      <div className="flex items-center gap-4">
+        <button className="text-gray-500 hover:text-indigo-600 relative">
+          <Bell size={22} />
+          <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+        </button>
+        <div className="h-8 w-px bg-gray-200 mx-2"></div>
+        <div className="flex items-center gap-2 cursor-pointer">
+          <UserCircle size={28} className="text-gray-400" />
+          <span className="text-sm font-semibold text-gray-700">Admin Utama</span>
         </div>
       </div>
     </header>
   );
-}
+};
+
+export default Header;

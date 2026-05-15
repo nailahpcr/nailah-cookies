@@ -18,7 +18,7 @@ export default function MainLayouts() {
             <div className="h-12 w-2 bg-red-700 rounded-full"></div>
             <div>
               <h2 className="text-3xl font-black text-slate-800 tracking-tight">
-                Cendekia <span className="text-red-700">Management</span>
+                Cendekia <span className="text-red-700">Dashboard</span>
               </h2>
               <p className="text-slate-500 font-medium">Selamat datang kembali di pusat literasi.</p>
             </div>
