@@ -3,15 +3,21 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 
-export default function MainLayouts() {
+export default function MainLayout() {
   return (
-    <div className="flex h-screen bg-[#FFF5F5] font-sans">
-      {/* Sidebar - Tema Merah Gelap */}
+    // bg-[#F5F6FA] adalah abu-abu muda background sesuai Figma
+    <div className="flex h-screen bg-[#F5F6FA] font-sans overflow-hidden">
+      
+      {/* Sidebar tetap di kiri */}
       <Sidebar />
 
+      {/* Area Konten Utama di kanan */}
       <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* Header di atas */}
         <Header />
 
+<<<<<<< HEAD
         <main className="flex-1 overflow-y-auto p-8">
           {/* Header Title Unik */}
           <div className="mb-8 flex items-end gap-3">
@@ -32,6 +38,12 @@ export default function MainLayouts() {
           <footer className="mt-10 text-center text-xs font-bold text-red-300 uppercase tracking-[0.2em]">
             &copy; 2026 Cendekia Red Series
           </footer>
+=======
+        {/* Konten Halaman (Dashboard, dll.) */}
+        {/* overflow-y-auto agar bagian ini saja yang bisa di-scroll */}
+        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+          <Outlet />
+>>>>>>> 9576723bce97312fdc17ad989ed1d6523a9bf6f5
         </main>
       </div>
     </div>
