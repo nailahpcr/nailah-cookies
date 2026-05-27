@@ -1,71 +1,79 @@
-import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { MdArrowBack, MdEmail, MdPhone, MdLocationOn } from "react-icons/md";
-import { customersData } from "../data/customers";
+import { useParams, Link } from 'react-router-dom';
+import { customers } from '../data/customers'; 
+import { ArrowLeft, Phone, MapPin, Calendar, CreditCard, Award, Clock } from 'lucide-react';
+import LoyaltyBadge from '../components/LoyaltyBadge';
+import CustomerCard from '../components/CustomerCard';
+import FeedbackCard from '../components/FeedbackCard';
 
-const CustomerDetailPage = () => {
+export default function CustomerDetailPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const customer = customers?.find((c) => String(c.id) === String(id));
 
-  // Cari data pelanggan berdasarkan ID dari URL
-  const customer = customersData.find((c) => c.id === parseInt(id));
-
-  if (!customer) {
-    return (
-      <div className="p-10 text-center">
-        <h2 className="text-xl font-bold">Pelanggan tidak ditemukan</h2>
-        <button onClick={() => navigate("/customers")} className="text-red-700 underline mt-4">
-          Kembali ke Daftar
-        </button>
-      </div>
-    );
-  }
+  if (!customer) return <div className="p-10 text-center text-gray-500">Data pelanggan tidak ditemukan!</div>;
 
   return (
-    <div className="space-y-6">
-      <button 
-        onClick={() => navigate(-1)} 
-        className="flex items-center gap-2 text-slate-600 hover:text-red-700 transition-colors font-medium"
-      >
-        <MdArrowBack size={20} /> Kembali
-      </button>
+    <div className="p-6 bg-[#F5F6FA] min-h-screen max-w-5xl mx-auto space-y-6">
+      {/* Header Top Nav */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Profil Pelanggan</h1>
+        <Link to="/customers" className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50 text-sm shadow-sm transition-all">
+          <ArrowLeft size={16} /> Kembali
+        </Link>
+      </div>
 
-      <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm">
-        <div className="flex items-center gap-6">
-          <div className="w-20 h-20 bg-red-100 text-red-700 rounded-full flex items-center justify-center text-3xl font-bold">
-            {customer.name.charAt(0)}
+      {/* Grid Layout Detail Informasi */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Kolom Kiri: Menggunakan Gabungan Komponen Reusable Baru */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Sinkronisasi Props ke Komponen CustomerCard */}
+          <CustomerCard 
+            name={customer.name} 
+            email={`${customer.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`} 
+            joinDate={customer.tgl_lahir || '01-01-2024'} 
+          />
+          
+          {/* Sinkronisasi Props ke Komponen FeedbackCard */}
+          <FeedbackCard 
+            user={customer.name} 
+            rating={5} 
+            comment="Sangat puas dengan respon layanan operasional logistik akun dashboard ini!" 
+          />
+        </div>
+
+        {/* Kolom Kanan: Detail Grid Meta Akun */}
+        <div className="lg:col-span-2 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-6">
+          <div className="flex justify-between items-center border-b border-gray-100 pb-4">
+            <h3 className="font-bold text-gray-900 text-base">Informasi Akun Lengkap</h3>
+            {/* Memanggil Komponen LoyaltyBadge berbasis Poin Asli */}
+            <LoyaltyBadge points={customer.points || 0} />
           </div>
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-800">{customer.name}</h1>
-            <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-bold">
-              {customer.tier} Member
-            </span>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <InfoItem icon={<Phone size={18} />} label="No. Handphone" value={customer.phone} />
+            <InfoItem icon={<MapPin size={18} />} label="Alamat Rumah" value={customer.alamat} />
+            <InfoItem icon={<Calendar size={18} />} label="Tanggal Lahir" value={customer.tgl_lahir} />
+            <InfoItem icon={<CreditCard size={18} />} label="Total Belanja" value={`Rp ${customer.totalSpend?.toLocaleString('id-ID')}`} />
+            <InfoItem icon={<Award size={18} />} label="Loyalty Points" value={`${customer.points?.toLocaleString('id-ID')} Pts`} />
+            <InfoItem icon={<Clock size={18} />} label="Aktivitas Terakhir" value={customer.tgl_terakhir} />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-          <div className="p-4 border border-slate-50 rounded-xl bg-slate-50/50">
-            <div className="flex items-center gap-3 text-slate-500 mb-2">
-              <MdPhone /> <span className="text-xs font-bold uppercase">Telepon</span>
-            </div>
-            <p className="font-semibold text-slate-800">{customer.phone || "-"}</p>
-          </div>
-          <div className="p-4 border border-slate-50 rounded-xl bg-slate-50/50">
-            <div className="flex items-center gap-3 text-slate-500 mb-2">
-              <MdEmail /> <span className="text-xs font-bold uppercase">Email</span>
-            </div>
-            <p className="font-semibold text-slate-800">{customer.email || "-"}</p>
-          </div>
-          <div className="p-4 border border-slate-50 rounded-xl bg-slate-50/50">
-            <div className="flex items-center gap-3 text-slate-500 mb-2">
-              <MdLocationOn /> <span className="text-xs font-bold uppercase">Total Belanja</span>
-            </div>
-            <p className="font-bold text-red-700 text-lg">Rp {customer.totalSpend?.toLocaleString()}</p>
-          </div>
-        </div>
       </div>
     </div>
   );
-};
+}
 
-export default CustomerDetailPage;
+function InfoItem({ icon, label, value }) {
+  return (
+    <div className="flex items-start gap-3 p-2 rounded-xl hover:bg-gray-50 transition-all">
+      <div className="p-2 bg-blue-50 text-[#4880FF] rounded-xl shrink-0">
+        {icon}
+      </div>
+      <div>
+        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{label}</p>
+        <p className="font-bold text-gray-800 mt-0.5 text-sm">{value || '-'}</p>
+      </div>
+    </div>
+  );
+}

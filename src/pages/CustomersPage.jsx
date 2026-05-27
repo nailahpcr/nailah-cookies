@@ -1,66 +1,45 @@
-import React from "react";
-import { Link } from "react-router-dom"; // Tambahkan Link untuk navigasi ke detail
-import { UserPlus, Filter, Eye } from 'lucide-react';
-import { customersData } from "../data/customers";
+import { useState } from 'react';
+import CustomerTable from '../components/CustomerTable';
+import SegmentFilter from '../components/SegmentFilter';
+import { customers } from '../data/customers'; 
 
-const CustomersPage = () => {
-  // Langsung gunakan customersData tanpa loading (karena tidak pakai hooks)
-  const customers = customersData;
+export default function CustomersPage() {
+  const [activeSegment, setActiveSegment] = useState('All');
+
+  // Menentukan logika klasifikasi poin berdasarkan komponen LoyaltyBadge
+  const getCustomerTier = (pts) => {
+    if (pts >= 1000) return 'Platinum';
+    if (pts >= 500) return 'Gold';
+    return 'Silver';
+  };
+
+  // Logika filter data pelanggan yang sinkron
+  const filteredCustomers = customers.filter(customer => {
+    if (activeSegment === 'All') return true;
+    return getCustomerTier(customer.points) === activeSegment;
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Manajemen Pelanggan</h1>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
-            <Filter size={16} /> Filter
-          </button>
-          <button className="flex items-center gap-2 bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-800 transition-colors">
-            <UserPlus size={16} /> Tambah Pelanggan
-          </button>
+    <div className="space-y-6 p-6 bg-[#F5F6FA] min-h-screen">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Customer List</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage your customers data and segments</p>
         </div>
+        <button className="bg-[#4880FF] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-blue-600 transition-all text-sm shadow-sm">
+          + Add New Customer
+        </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nama</th>
-              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Belanja</th>
-              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {customers.map((c) => (
-              <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 font-medium text-gray-900">{c.name}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    c.tier === 'Platinum' ? 'bg-purple-100 text-purple-700' : 
-                    c.tier === 'Gold' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {c.tier}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-gray-600 font-mono text-sm">
-                  Rp {c.totalSpend?.toLocaleString() || 0}
-                </td>
-                <td className="px-6 py-4 text-center">
-                  <Link 
-                    to={`/customers/${c.id}`} 
-                    className="inline-flex items-center gap-1 text-red-700 hover:text-red-900 font-medium text-sm"
-                  >
-                    <Eye size={16} /> Detail
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Filter Segment */}
+      <SegmentFilter 
+        options={['All', 'Silver', 'Gold', 'Platinum']} 
+        activeSegment={activeSegment} 
+        onSelect={setActiveSegment} 
+      />
+
+      {/* Memanggil Komponen Tabel */}
+      <CustomerTable data={filteredCustomers} />
     </div>
   );
-};
-
-export default CustomersPage;
+}

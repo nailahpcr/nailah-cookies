@@ -1,59 +1,54 @@
-import React from "react";
-import { MdSearch, MdNotificationsNone, MdKeyboardArrowDown } from "react-icons/md";
+import { useNavigate } from 'react-router-dom'; // 1. Import useNavigate
+import NotificationBell from './NotificationBell';
 
-const Header = () => {
+import { notifications } from '../data/notifications';
+
+export default function Header() {
+  const navigate = useNavigate(); // 2. Inisialisasi hook
+
+  const handleLogout = () => {
+    // Menghapus status login dari penyimpanan
+    localStorage.removeItem('isAuthenticated');
+    // Arahkan ke halaman login
+    navigate('/login');
+  };
+
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6">
-      {/* Search Bar */}
-      <div className="relative w-72">
-        <MdSearch 
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" 
-          size={20} 
-        />
-        <input
-          type="text"
-          placeholder="Search"
-          className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-        />
+    <header className="h-16 bg-surface flex items-center justify-between px-6 z-10 shadow-sm">
+      {/* Search Bar ala DashStack */}
+      <div className="flex-1 flex items-center">
+        <div className="relative w-96">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-textMuted">
+            🔍
+          </span>
+          <input 
+            type="text" 
+            placeholder="Search..." 
+            className="w-full bg-background text-textMain rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+        </div>
       </div>
 
-      {/* Right Section */}
-      <div className="flex items-center gap-4">
-        {/* Notification */}
-        <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-          <MdNotificationsNone size={22} />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-        </button>
-
-        {/* Language Selector */}
-        <button className="hidden md:flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+      {/* Profil & Notifikasi */}
+      <div className="flex items-center gap-6">
+        <NotificationBell />
+        
+        {/* Tombol Profil yang difungsikan sebagai Logout */}
+        <div 
+          onClick={handleLogout} 
+          className="flex items-center gap-3 border-l border-border pl-6 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <img 
-            src="https://flagcdn.com/w20/gb.png" 
-            alt="English" 
-            className="w-5 h-4 object-cover rounded-sm"
+            src="https://ui-avatars.com/api/?name=Admin+User&background=4880FF&color=fff" 
+            alt="Profile" 
+            className="w-10 h-10 rounded-full"
           />
-          <span className="text-sm text-gray-600 font-medium">English</span>
-          <MdKeyboardArrowDown className="text-gray-400" />
-        </button>
-
-        {/* Divider */}
-        <div className="hidden md:block w-px h-8 bg-gray-200 mx-1"></div>
-
-        {/* User Profile */}
-        <div className="flex items-center gap-3 cursor-pointer p-1 hover:bg-gray-50 rounded-xl transition-colors">
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-gray-800 leading-tight">Admin Utama</p>
-            <p className="text-xs text-red-500 font-semibold uppercase tracking-wider">Cendekia</p>
+          <div className="hidden md:block text-sm">
+            <p className="font-bold text-textMain">Admin User</p>
+            <p className="text-danger text-xs font-bold">Logout</p> {/* Indikator Logout */}
           </div>
-          <img
-            src="https://i.pravatar.cc/40?img=5"
-            alt="Profile"
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
-          />
         </div>
       </div>
     </header>
   );
-};
-
-export default Header;
+}

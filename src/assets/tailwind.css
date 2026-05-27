@@ -1,12 +1,28 @@
-@import "tailwindcss"; /* [cite: 6, 7] */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
+/* Import Tailwind versi 4 */
+@import "tailwindcss";
+
+/* Di Tailwind v4, kita mendefinisikan custom colors dan fonts di dalam @theme.
+  Ini akan otomatis men-generate class seperti bg-background, text-textMain, dll.
+*/
 @theme {
-  --font-barlow: "Barlow", sans-serif; /* [cite: 7] */
-  --font-poppins: "Poppins", sans-serif; /* [cite: 7] */
-  --color-hijau: #00B074; /* [cite: 9] */
-  /* Tambahkan warna merah Anda di sini */
+  --color-primary: #4880FF;
+  --color-background: #F5F6FA;
+  --color-surface: #FFFFFF;
+  --color-textMain: #202224;
+  --color-textMuted: #828282;
+  --color-border: #D5D5D5;
+  --color-success: #00B69B;
+  --color-danger: #EF3826;
+  --color-warning: #FF8A4C;
+  
+  --font-sans: "Nunito", sans-serif;
 }
 
-body {
-  @apply font-barlow; /* [cite: 8] */
+/* Terapkan ke body */
+@layer base {
+  body {
+    @apply bg-background text-textMain font-sans;
+  }
 }
