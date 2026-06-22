@@ -1,60 +1,91 @@
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { authAPI } from "../services/authAPI";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    localStorage.setItem('isAuthenticated', 'true');
-    navigate('/dashboard'); // Disesuaikan langsung ke dashboard utama pasca login sukses
+    setLoading(true);
+    setError("");
+
+    try {
+      // Panggil fungsi login ke Supabase
+      const user = await authAPI.login(email, password);
+      
+      // Simpan penanda login ke localStorage (opsional, agar session tersimpan)
+      localStorage.setItem("user_token", user.id);
+      localStorage.setItem("user_email", user.email);
+
+      // Sesuai modul: kalau sukses login, arahkan ke dashboard utama
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message || "Email atau password salah.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#4880FF] px-4">
-      <div className="bg-white w-full max-w-sm p-8 rounded-3xl shadow-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-950 tracking-tight">Login to Account</h1>
-          <p className="text-gray-400 text-xs mt-2">Please enter your email and password to continue</p>
+    <div className="bg-white rounded-3xl shadow-xl p-10 max-w-md w-full mx-auto">
+      <h2 className="text-2xl font-bold text-gray-800 text-center mb-1">Login to Account</h2>
+      <p className="text-xs text-gray-400 text-center mb-6">Please enter your email and password to continue</p>
+
+      {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-100">{error}</div>}
+
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">EMAIL ADDRESS :</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="masukkan email"
+            className="w-full px-4 py-2.5 bg-[#f4f7ff] border border-transparent rounded-xl text-sm text-gray-700 focus:outline-none focus:bg-white focus:border-blue-400 transition"
+          />
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Email address :</label>
-            <input 
-              type="email" 
-              placeholder="esteban_schiller@gmail.com" 
-              className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#4880FF]/30 focus:border-[#4880FF] outline-none transition-all" 
-              required 
-            />
+        <div>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="text-xs font-medium text-gray-600">PASSWORD :</label>
+            <a href="#" className="text-[11px] text-gray-400 hover:underline">Forgot Password?</a>
           </div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="••••••••"
+            className="w-full px-4 py-2.5 bg-[#f4f7ff] border border-transparent rounded-xl text-sm text-gray-700 focus:outline-none focus:bg-white focus:border-blue-400 transition"
+          />
+        </div>
 
-          <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Password :</label>
-              <a href="#" className="text-xs text-[#4880FF] font-bold hover:underline">Forget Password?</a>
-            </div>
-            <input 
-              type="password" 
-              placeholder="••••••••" 
-              className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#4880FF]/30 focus:border-[#4880FF] outline-none transition-all" 
-              required 
-            />
-          </div>
+        <div className="flex items-center pt-1">
+          <input id="remember" type="checkbox" className="h-4 w-4 text-blue-600 border-gray-300 rounded" />
+          <label htmlFor="remember" className="ml-2 block text-[11px] text-gray-500">
+            Remember Password
+          </label>
+        </div>
 
-          <div className="flex items-center gap-2.5 py-1">
-            <input type="checkbox" id="remember" className="w-4 h-4 rounded text-[#4880FF] focus:ring-[#4880FF]" />
-            <label htmlFor="remember" className="text-xs font-semibold text-gray-500 cursor-pointer">Remember Password</label>
-          </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full mt-4 py-3 bg-[#4c84ff] hover:bg-blue-600 text-white font-semibold rounded-xl text-sm transition disabled:opacity-50"
+        >
+          {loading ? "Signing In..." : "Sign In"}
+        </button>
+      </form>
 
-          <button type="submit" className="w-full bg-[#4880FF] text-white py-3.5 rounded-xl font-bold hover:bg-blue-600 transition-all text-sm shadow-md">
-            Sign In
-          </button>
-        </form>
-
-        <p className="text-center text-xs text-gray-500 mt-6 font-medium">
-          Don't have an account? <a href="#" className="text-[#4880FF] font-bold hover:underline">Create Account</a>
-        </p>
-      </div>
+      <p className="text-[11px] text-gray-400 text-center mt-6">
+        Don't have an account?{" "}
+        <a href="/register" className="text-blue-500 font-semibold hover:underline">Create Account</a>
+      </p>
     </div>
   );
 }

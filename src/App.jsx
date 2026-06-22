@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
-import LoginPage from './pages/LoginPage';
+
 // Pastikan semua halaman di-import di sini
+import Register from "./pages/Register";
+import LoginPage from "./pages/LoginPage";
 import DashboardPage from './pages/DashboardPage';
 import CustomersPage from './pages/CustomersPage';
 import TransactionsPage from './pages/TransactionsPage';
@@ -27,6 +29,7 @@ export default function App() {
         {/* Rute Publik */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<Register />} />
         </Route>
 
         {/* Rute Terproteksi */}

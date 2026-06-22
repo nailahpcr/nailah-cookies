@@ -1,8 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react'; // 
 import { productsData } from '../data/productsData';
 import SegmentFilter from '../components/SegmentFilter';
-
-// Import komponen shadcn/ui
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -13,7 +11,9 @@ import {
 export default function ProductsPage() {
   const [activeCategory, setActiveCategory] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' atau 'table'
+  const [viewMode, setViewMode] = useState('grid');
+
+  const searchRef = useRef(null); // 🆕 buat ref untuk input pencarian
 
   const filteredByCategory = productsData.filter(product => {
     if (activeCategory === 'Semua') return true;
@@ -27,6 +27,12 @@ export default function ProductsPage() {
 
   const adaStokTipis = productsData.some(p => p.stock <= 10);
 
+  // 🆕 Fungsi untuk fokus otomatis ke input saat kategori diubah
+  const handleCategoryChange = (category) => {
+    setActiveCategory(category);
+    searchRef.current?.focus();
+  };
+
   return (
     <div className="p-6 bg-[#F5F6FA] min-h-screen space-y-6">
 
@@ -39,10 +45,11 @@ export default function ProductsPage() {
           </p>
         </div>
 
-        {/* KOMPONEN 1: Input shadcn (ganti input biasa) */}
+        {/* Input pencarian — sekarang pakai ref */}
         <div className="w-full md:w-80 relative">
           <span className="absolute left-3 top-2.5 text-gray-400 text-sm z-10">🔍</span>
           <Input
+            ref={searchRef} // 🆕 pasang ref ke input
             placeholder="Cari nama atau ID produk..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -51,7 +58,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* KOMPONEN 2: Alert shadcn - muncul kalau ada stok tipis */}
+      {/* Alert stok tipis */}
       {adaStokTipis && (
         <Alert variant="destructive">
           <AlertTitle>⚠️ Peringatan Stok Tipis!</AlertTitle>
@@ -67,7 +74,7 @@ export default function ProductsPage() {
           <SegmentFilter
             options={['Semua', 'Buku', 'Alat Tulis']}
             activeSegment={activeCategory}
-            onSelect={setActiveCategory}
+            onSelect={handleCategoryChange} // 🆕 ganti dari setActiveCategory ke handleCategoryChange
           />
         </div>
 
@@ -96,7 +103,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* KOMPONEN 3: Table shadcn - tampil kalau mode tabel */}
+      {/* Sisa kode tabel & grid tidak berubah — tetap sama seperti aslinya */}
       {viewMode === 'table' ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <Table>
@@ -138,7 +145,6 @@ export default function ProductsPage() {
           </Table>
         </div>
       ) : (
-        /* TAMPILAN GRID (sama seperti sebelumnya) */
         finalFilteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {finalFilteredProducts.map((product) => {
