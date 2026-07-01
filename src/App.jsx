@@ -3,6 +3,7 @@ import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
 
 // Pastikan semua halaman di-import di sini
+import LandingPage from './pages/LandingPage';
 import Register from "./pages/Register";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from './pages/DashboardPage';
@@ -26,6 +27,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Landing Page - Publik */}
+        <Route path="/" element={<LandingPage />} />
+
         {/* Rute Publik */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
@@ -34,7 +38,6 @@ export default function App() {
 
         {/* Rute Terproteksi */}
         <Route element={isAuthenticated ? <MainLayout /> : <Navigate to="/login" />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:id" element={<CustomerDetailPage />} />
