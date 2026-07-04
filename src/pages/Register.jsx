@@ -63,7 +63,7 @@ export default function Register() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">Email address:</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">Email Address:</label>
           <input
             type="email"
             name="email"

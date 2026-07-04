@@ -10,20 +10,21 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      // Panggil fungsi login ke Supabase
       const user = await authAPI.login(email, password);
-      
-      // Simpan penanda login ke localStorage (opsional, agar session tersimpan)
+
+      localStorage.setItem("isAuthenticated", "true");
       localStorage.setItem("user_token", user.id);
       localStorage.setItem("user_email", user.email);
 
-      // Sesuai modul: kalau sukses login, arahkan ke dashboard utama
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err.message || "Email atau password salah.");
     } finally {
@@ -40,7 +41,7 @@ export default function LoginPage() {
 
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">EMAIL ADDRESS :</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">Email :</label>
           <input
             type="email"
             value={email}
@@ -53,7 +54,7 @@ export default function LoginPage() {
 
         <div>
           <div className="flex justify-between items-center mb-1.5">
-            <label className="text-xs font-medium text-gray-600">PASSWORD :</label>
+            <label className="text-xs font-medium text-gray-600">Password :</label>
             <a href="#" className="text-[11px] text-gray-400 hover:underline">Forgot Password?</a>
           </div>
           <input
