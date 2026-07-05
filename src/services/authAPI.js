@@ -1,78 +1,103 @@
-const API_URL = "https://cxiiblevsalnlgliwyzr.supabase.co/rest/v1/customers";
-const API_KEY = "sb_publishable_vP4NJyMYcHdHrYVLs3c-RA_UbOMde7U"; 
+import { createClient } from "@supabase/supabase-js";
 
-const headers = {
-  "Content-Type": "application/json",
-  "apikey": API_KEY,
-  "Authorization": `Bearer ${API_KEY}`
-};
+// 🛠️ PERBAIKAN: Mengembalikan ke basis domain URL Supabase murni tanpa path /rest/v1
+const SUPABASE_URL = "https://cxiiblevsalnlgliwyzr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4aWlibGV2c2FsbmxnbGl3eXpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMTc5MjgsImV4cCI6MjA5NzU5MzkyOH0.Q9nP3mLf0d4r23ujWuLN2sNJUmPnDhNPUE__DbcgKaE";
+
+// Menggunakan SDK Resmi Supabase
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export const authAPI = {
-  // 1. CREATE: Registrasi Pelanggan Baru
+  // 1. CREATE: Registrasi Akun Resmi + Profil CRM
   register: async (userData) => {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(userData),
+    // a. Daftarkan user ke sistem otentikasi aman Supabase
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Gagal mendaftarkan akun.");
+
+    if (authError) throw authError;
+
+    // b. Setelah user terbuat di auth, masukkan data pelengkap ke tabel 'customers'
+    if (authData?.user) {
+      const { error: dbError } = await supabase
+        .from("customers")
+        .insert([
+          {
+            id: authData.user.id, // ID sinkron dengan Supabase Auth uuid
+            id_pelanggan: userData.id_pelanggan,
+            nama_pelanggan: userData.nama_pelanggan,
+            email: userData.email,
+            password: userData.password, // Sekarang password dikirim agar tidak memicu error NULL constraint
+            no_handphone: userData.no_handphone,
+            alamat: userData.alamat,
+            segmentasi: userData.segmentasi,
+            nama_institusi: userData.nama_institusi || null,
+            tanggal_lahir: userData.tanggal_lahir || null, // 🛠️ TAMBAHAN: Kolom Tanggal Lahir Baru
+            total_poin: 0, // Aman diset angka 0 langsung berkat perbaikan sebelumnya
+            status_pelanggan: "New Customer"
+          }
+        ]);
+
+      if (dbError) throw dbError;
     }
     return true;
   },
 
-  // 2. READ (SINGLE): Cocokkan email & password untuk Login
+  // 2. READ: Login Menggunakan Fitur Session Token Supabase
   login: async (email, password) => {
-    const response = await fetch(`${API_URL}?email=eq.${email}&password=eq.${password}`, {
-      method: "GET",
-      headers: headers,
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
-    if (!response.ok) throw new Error("Gagal melakukan autentikasi.");
-    const data = await response.json();
-    if (data.length === 0) throw new Error("Email atau password salah!");
-    return data[0];
+
+    if (error) throw error;
+    return data.user; // Mengembalikan data user yang sedang aktif login
   },
 
-  // 3. READ (ALL): Mengambil semua daftar pelanggan untuk Halaman Admin
+  // 3. READ (ALL): Mengambil daftar pelanggan untuk dashboard admin
   fetchCustomers: async () => {
-    const response = await fetch(`${API_URL}?select=*`, {
-      method: "GET",
-      headers: headers,
-    });
-    if (!response.ok) throw new Error("Gagal memuat data pelanggan.");
-    return await response.json();
+    const { data, error } = await supabase
+      .from("customers")
+      .select("*")
+      // Menggunakan id_pelanggan atau created_at untuk pengurutan di SDK
+      .order("id_pelanggan", { ascending: false });
+
+    if (error) throw error;
+    return data;
   },
 
-  // 4. UPDATE: Memperbarui data pelanggan berdasarkan ID internal
+  // 4. UPDATE: Edit detail data pelanggan
   updateCustomer: async (id, updatedData) => {
-    const response = await fetch(`${API_URL}?id=eq.${id}`, {
-      method: "PATCH", // Menggunakan PATCH untuk pembaruan sebagian data
-      headers: headers,
-      body: JSON.stringify(updatedData),
-    });
-    if (!response.ok) throw new Error("Gagal memperbarui data pelanggan.");
+    const { error } = await supabase
+      .from("customers")
+      .update(updatedData)
+      .eq("id", id);
+
+    if (error) throw error;
     return true;
   },
 
-  // 5. DELETE: Menghapus data pelanggan berdasarkan ID internal
+  // 5. DELETE: Hapus pelanggan
   deleteCustomer: async (id) => {
-    const response = await fetch(`${API_URL}?id=eq.${id}`, {
-      method: "DELETE",
-      headers: headers,
-    });
-    if (!response.ok) throw new Error("Gagal menghapus pelanggan.");
+    const { error } = await supabase
+      .from("customers")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
     return true;
   },
-  
-  // 6. READ SINGLE: Mengambil 1 data pelanggan secara spesifik berdasarkan ID
+
+  // 6. READ SINGLE: Ambil data 1 pelanggan spesifik
   fetchCustomerById: async (id) => {
-    const response = await fetch(`${API_URL}?id=eq.${id}`, {
-      method: "GET",
-      headers: headers,
-    });
-    if (!response.ok) throw new Error("Gagal memuat detail pelanggan.");
-    const data = await response.json();
-    return data[0]; // Mengembalikan satu objek pelanggan saja
+    const { data, error } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 };
