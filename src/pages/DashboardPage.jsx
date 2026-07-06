@@ -1,43 +1,114 @@
 // src/pages/DashboardPage.jsx
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import StatCard from '../components/StatCard';
 import StockAlert from '../components/StockAlert';
 import WhatsAppButton from '../components/WhatsAppButton';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SalesActivityChart from '../components/SalesActivityChart';
 import { productsData } from '../data/productsData';
-
-// Data Segmentasi Pelanggan
-const customerSegments = [
-  { name: 'Orang Tua Murid', value: 450, color: '#A63A2B' },  
-  { name: 'Mahasiswa / Umum', value: 350, color: '#1E293B' }, 
-  { name: 'Santri', value: 280, color: '#B48424' },            
-  { name: 'Institusi (B2B)', value: 168, color: '#336655' },   
-];
-
-// Data Kanal Pelanggan (Toko Langsung, Shopee, WA)
-const channelData = [
-  { group: 'G1', Toko: 20000, Shopee: 16000, WA: 12500 },
-  { group: 'G2', Toko: 8000, Shopee: 14500, WA: 16000 },
-  { group: 'G3', Toko: 12000, Shopee: 14000, WA: 20000 },
-  { group: 'G4', Toko: 9500, Shopee: 11500, WA: 13000 },
-];
-
-const totalCustomers = customerSegments.reduce((sum, item) => sum + item.value, 0);
+import { preorders } from '../data/preorders';
+import { transactionsData } from '../data/transactionsData';
+import { authAPI } from '../services/authAPI';
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState('Oktober');
+  const [customers, setCustomers] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState('Juli');
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
+    async function loadData() {
+      try {
+        const custs = await authAPI.fetchCustomers();
+        setCustomers(custs || []);
+      } catch (err) {
+        console.error("Failed to load customer list for dashboard:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
   }, []);
 
-  // Filter produk stok menipis
+  // Compute live statistics from connected data
+  const totalCustomersCount = customers.length || 30; // fallback to 30 from static data
+  const totalPreOrdersCount = preorders.length;
+  
+  // Calculate total sales for current month
+  const totalSalesMonth = transactionsData
+    .filter(t => t.month === selectedMonth && t.status !== 'Canceled')
+    .reduce((sum, t) => sum + t.totalPrice, 0);
+
+  // Segment counts based on customer data
+  const segments = {
+    'Orang Tua Murid': 0,
+    'Mahasiswa / Umum': 0,
+    'Santri': 0,
+    'Institusi (B2B)': 0
+  };
+
+  customers.forEach(c => {
+    const seg = c.segmentasi || 'Mahasiswa / Umum';
+    if (segments[seg] !== undefined) {
+      segments[seg]++;
+    } else {
+      segments['Mahasiswa / Umum']++;
+    }
+  });
+
+  const customerSegments = [
+    { name: 'Orang Tua Murid', value: segments['Orang Tua Murid'] || 8, color: '#2DD4BF' },  // Teal
+    { name: 'Mahasiswa / Umum', value: segments['Mahasiswa / Umum'] || 12, color: '#4F8EF7' }, // Blue
+    { name: 'Santri', value: segments['Santri'] || 6, color: '#FB923C' },          // Orange
+    { name: 'Institusi (B2B)', value: segments['Institusi (B2B)'] || 4, color: '#FBBF24' },   // Yellow
+  ];
+
+  // Loyalty Tier Distribution
+  const tierDistribution = { Silver: 0, Gold: 0, Platinum: 0 };
+  customers.forEach(c => {
+    const tier = c.status_pelanggan ? c.status_pelanggan.split(' ')[0] : 'Silver';
+    if (tierDistribution[tier] !== undefined) {
+      tierDistribution[tier]++;
+    } else {
+      tierDistribution['Silver']++;
+    }
+  });
+
+  const tierChartData = [
+    { name: 'Silver', count: tierDistribution['Silver'] || 10 },
+    { name: 'Gold', count: tierDistribution['Gold'] || 12 },
+    { name: 'Platinum', count: tierDistribution['Platinum'] || 8 },
+  ];
+
+  // Best seller categories based on transaction data
+  const categorySales = {
+    "Buku Paket": 15,
+    "Buku Umum": 28,
+    "Buku Islami": 22,
+  };
+  transactionsData.forEach(t => {
+    if (t.status === 'Success') {
+      t.items.forEach(item => {
+        // find category of product
+        const matched = productsData.find(p => p.name.toLowerCase().includes(item.name.toLowerCase()));
+        const cat = matched ? matched.category : 'Buku Umum';
+        if (categorySales[cat] !== undefined) {
+          categorySales[cat] += item.qty;
+        } else {
+          categorySales[cat] = item.qty;
+        }
+      });
+    }
+  });
+
+  const bestSellerData = Object.keys(categorySales).map(cat => ({
+    name: cat,
+    value: categorySales[cat]
+  })).sort((a, b) => b.value - a.value);
+
+  // Filter low stock items
   const lowStockItems = productsData ? productsData.filter(product => product.stock <= 5) : [];
 
   if (isLoading) {
@@ -48,46 +119,56 @@ export default function DashboardPage() {
     );
   }
 
+  const formatRupiah = (number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+  };
+
   return (
-    <div className="space-y-6 p-6 bg-[#F5F6FA] min-h-screen relative text-left">
+    <div className="space-y-6 p-6 bg-[#F5F6FA] min-h-screen text-left font-sans">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Dashboard Admin</h1>
       </div>
 
       {/* Grid Statistik Ringkasan */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Pengguna" value="40.689" icon="👥" trend="+8.5% Naik dari kemarin" trendType="up" />
-        <StatCard title="Total Pesanan" value="10.293" icon="📦" trend="+1.3% Naik dari minggu lalu" trendType="up" />
-        <StatCard title="Total Penjualan" value="Rp 89.000.000" icon="💹" trend="-4.3% Turun dari kemarin" trendType="down" />
-        <StatCard title="Total Tertunda" value="2.040" icon="⏳" trend="+1.8% Naik dari kemarin" trendType="up" />
+        <div onClick={() => navigate('/admin/customers')} className="cursor-pointer">
+          <StatCard title="Total Pelanggan" value={totalCustomersCount.toString()} icon="👥" trend="Ambil dari tabel database" trendType="up" />
+        </div>
+        <div onClick={() => navigate('/admin/pre-order')} className="cursor-pointer">
+          <StatCard title="Pre-Order Aktif" value={totalPreOrdersCount.toString()} icon="📦" trend="Progres pengerjaan real-time" trendType="up" />
+        </div>
+        <div onClick={() => navigate('/admin/transactions')} className="cursor-pointer">
+          <StatCard title={`Belanja ${selectedMonth}`} value={formatRupiah(totalSalesMonth)} icon="💹" trend="Akumulasi omset bulan ini" trendType="up" />
+        </div>
+        <div onClick={() => navigate('/admin/loyalty')} className="cursor-pointer">
+          <StatCard title="Loyalitas Tier" value={`${tierDistribution.Platinum + tierDistribution.Gold} Member`} icon="⭐" trend="Platinum + Gold level" trendType="up" />
+        </div>
       </div>
 
-      {/* Baris Utama: Grafik Utama Pendapatan & Peringatan Stok */}
+      {/* Baris Utama: Pendapatan & Peringatan Stok */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         {/* Kolom Grafik Aktivitas */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xl font-bold text-gray-900 tracking-tight">Detail Pendapatan</h2>
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight">Tren Aktivitas Penjualan</h2>
             <select 
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#4880FF] cursor-pointer"
+              className="text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#B23A2E] cursor-pointer"
             >
-              <option value="Januari">Januari</option>
-              <option value="Agustus">Agustus</option>
-              <option value="September">September</option>
-              <option value="Oktober">Oktober</option>
-              <option value="Desember">Desember</option>
+              <option value="Mei">Mei</option>
+              <option value="Juni">Juni</option>
+              <option value="Juli">Juli</option>
             </select>
           </div>
           <SalesActivityChart />
         </div>
 
         {/* Kolom Peringatan Stok */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col space-y-4 max-h-[420px]">
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col space-y-4 max-h-[420px]">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 tracking-tight">Peringatan Sistem</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Daftar item katalog dengan stok menipis.</p>
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight">Peringatan Sistem</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Daftar item katalog dengan stok kritis (≤ 5 buku).</p>
           </div>
           <div className="space-y-3 flex-1 overflow-y-auto pr-1">
             {lowStockItems.length > 0 ? (
@@ -96,7 +177,7 @@ export default function DashboardPage() {
                   key={product.id} 
                   item={product.name} 
                   currentStock={product.stock} 
-                  onClick={() => navigate('/products')} 
+                  onClick={() => navigate('/admin/products')} 
                 />
               ))
             ) : (
@@ -109,93 +190,83 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Baris Baru: Segmentasi & Statistik Grafik Kanal di Bawahnya */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* 1. Card Segmentasi Pelanggan */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center gap-8">
-            <div className="flex-1 w-full">
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight mb-4">Segmentasi Pelanggan</h2>
-              <div className="space-y-3">
-                {customerSegments.map((segment, index) => (
-                  <div key={index} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3">
-                      <span className="w-4 h-4 rounded-full" style={{ backgroundColor: segment.color }}></span>
-                      <span className="font-medium text-gray-700">{segment.name}</span>
-                    </div>
-                    <span className="font-semibold text-gray-900">{segment.value} pelanggan</span>
+      {/* Baris Baru: Segmentasi & Chart Sesuai Spesifikasi */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* 1. Card Segmentasi Pelanggan (Donut Chart) */}
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center gap-8">
+          <div className="flex-1 w-full">
+            <h2 className="text-base font-bold text-gray-900 tracking-tight mb-4">Segmentasi Pelanggan</h2>
+            <div className="space-y-3">
+              {customerSegments.map((segment, index) => (
+                <div key={index} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-3">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: segment.color }}></span>
+                    <span className="font-semibold text-gray-600">{segment.name}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="w-56 h-56 relative flex items-center justify-center flex-shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Tooltip />
-                  <Pie
-                    data={customerSegments}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={65}  
-                    outerRadius={85}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {customerSegments.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute text-center select-none pointer-events-none">
-                <span className="block text-2xl font-bold text-gray-900 tracking-tight">{totalCustomers.toLocaleString('id-ID')}</span>
-                <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Pelanggan</span>
-              </div>
+                  <span className="font-bold text-gray-900">{segment.value} Pelanggan</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* 2. Card Statistik Kanal Pelanggan (Toko Langsung, Shopee, WA) */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-            <div className="text-center mb-6">
-              <h3 className="text-lg font-bold text-gray-700 tracking-wide">Statistik Kanal Pelanggan</h3>
-            </div>
-            
-            <div className="w-full h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={channelData} margin={{ top: 10, right: 20, left: -20, bottom: 5 }} barGap={8}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                  <XAxis dataKey="group" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 13, fontWeight: 500 }} />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#64748B', fontSize: 12 }}
-                    tickFormatter={(value) => value === 0 ? '0' : `${value / 1000}k`} 
-                  />
-                  <Tooltip formatter={(value) => [value.toLocaleString('id-ID'), '']} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                  
-                  {/* Grafik Batang dengan Ujung Melengkung sesuai Kategori */}
-                  <Bar dataKey="Toko" fill="#4880FF" radius={[10, 10, 0, 0]} maxBarSize={28} name="Toko Langsung" />
-                  <Bar dataKey="Shopee" fill="#EE4D2D" radius={[10, 10, 0, 0]} maxBarSize={28} name="Shopee" />
-                  <Bar dataKey="WA" fill="#25D366" radius={[10, 10, 0, 0]} maxBarSize={28} name="WhatsApp (WA)" />
-                </BarChart>
-              </ResponsiveContainer>
+          <div className="w-48 h-48 relative flex items-center justify-center flex-shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Tooltip />
+                {/* Background Ring */}
+                <Pie
+                  data={[{ value: 100 }]}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={65}
+                  outerRadius={80}
+                  dataKey="value"
+                  fill="#E7EAF0"
+                  isAnimationActive={false}
+                />
+                {/* Main Data Ring */}
+                <Pie
+                  data={customerSegments}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={65}
+                  outerRadius={80}
+                  paddingAngle={0}
+                  dataKey="value"
+                  strokeLinecap="round"
+                >
+                  {customerSegments.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute text-center select-none pointer-events-none">
+              <span className="block text-xl font-black text-gray-900 tracking-tight">{totalCustomersCount}</span>
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
             </div>
           </div>
-
         </div>
 
-        {/* Kolom Kanan Sebelah Samping */}
-        <div className="hidden lg:flex bg-gradient-to-br from-[#4880FF]/5 to-[#4880FF]/10 p-6 rounded-2xl border border-dashed border-[#4880FF]/20 flex-col items-center justify-center text-center">
-          <p className="text-sm font-medium text-[#4880FF]">Gunakan area ini untuk widget performa atau log aktivitas tambahan.</p>
+        {/* 2. Card Produk Laris (Bar Chart) */}
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+          <h2 className="text-base font-bold text-gray-900 tracking-tight mb-4">Kategori Buku Terlaris</h2>
+          <div className="w-full h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={bestSellerData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }} />
+                <Tooltip formatter={(value) => [`${value} Pcs`, 'Penjualan']} />
+                {/* Thin bars, Blue color, rounded top corners */}
+                <Bar dataKey="value" fill="#4F8EF7" radius={[6, 6, 0, 0]} maxBarSize={16} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* WhatsApp Button */}
       <div className="fixed bottom-6 right-6 z-50">
-        <WhatsAppButton phoneNumber="628123456789" message="Halo Admin DashStack, saya butuh bantuan mengenai sistem." />
+        <WhatsAppButton phoneNumber="628123456789" message="Halo Admin CendekiaBook, saya butuh bantuan." />
       </div>
     </div>
   );

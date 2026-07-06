@@ -1,262 +1,277 @@
 // src/pages/PreOrderPage.jsx
-import { useState } from 'react';
-import { productsData } from '../data/productsData'; // 🌟 Sinkronisasi data katalog pusat
-import SegmentFilter from '../components/SegmentFilter';
+import React, { useState, useEffect } from 'react';
+import { preorderProducts, preorders as initialPOs } from '../data/preorders';
 import OrderTimeline from '../components/OrderTimeline';
-import FeedbackCard from '../components/FeedbackCard';
-import {
-  Table, TableBody, TableCell,
-  TableHead, TableHeader, TableRow,
-} from "@/components/ui/table"; // 🌟 Penggunaan komponen Tabel seragam
-
-const initialPOOrders = [
-  { 
-    id: 'PO-7721', 
-    customer: 'Rian Anggara', 
-    phone: '628123456789',
-    productId: 'PO-001', 
-    Product: 'CRM Module Premium v2', 
-    date: '25 May 2026', 
-    dp: 'Rp 500,000', 
-    totalPrice: 'Rp 1,500,000',
-    status: 'Produksi',
-    progress: 45,
-    customNote: 'Mohon agar proses perakitan dicek teliti ya min, tidak apa lambat sedikit yang penting aman.'
-  },
-  { 
-    id: 'PO-7722', 
-    customer: 'Siti Aminah', 
-    phone: '628987654321',
-    productId: 'PO-002', 
-    Product: 'Hardware Server Mini Stack', 
-    date: '26 May 2026', 
-    dp: 'Rp 2,500,000', 
-    totalPrice: 'Rp 5,000,000',
-    status: 'Q&A Check',
-    progress: 80,
-    customNote: 'Kirim pakai packing kayu ekstra ya.'
-  },
-  { 
-    id: 'PO-7723', 
-    customer: 'Budi Santoso', 
-    phone: '628554433221',
-    productId: 'PO-001', 
-    Product: 'CRM Module Premium v2', 
-    date: '27 May 2026', 
-    dp: 'Rp 500,000', 
-    totalPrice: 'Rp 1,500,000',
-    status: 'Selesai',
-    progress: 100,
-    customNote: 'Ditunggu pengiriman nomor resinya.'
-  },
-];
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from '../components/ui/button';
 
 export default function PreOrderPage() {
-  const [activeTab, setActiveTab] = useState('Semua');
-  const [selectedOrder, setSelectedOrder] = useState(initialPOOrders[0]);
-
-  const factorySteps = [
-    { title: 'Pengumpulan Pendanaan DP', time: '10 Mei 2026, 09:00 WIB', done: true },
-    { title: 'Proses Perakitan & Produksi Massal', time: '18 Mei 2026, 14:00 WIB', done: true },
-    { title: 'Pengecekan Kualitas Akhir (QC)', time: selectedOrder.status === 'Q&A Check' || selectedOrder.status === 'Selesai' ? 'Selesai' : 'Sedang Berjalan', done: selectedOrder.status === 'Q&A Check' || selectedOrder.status === 'Selesai' },
-    { title: 'Siap Dikirim / Selesai', time: selectedOrder.status === 'Selesai' ? 'Selesai' : 'Belum Dimulai', done: selectedOrder.status === 'Selesai' }
-  ];
-
-  const totalOrders = initialPOOrders.length;
-  const inProduction = initialPOOrders.filter(o => o.status === 'Produksi' || o.status === 'Q&A Check').length;
-  const isDone = initialPOOrders.filter(o => o.status === 'Selesai').length;
-
-  const filteredOrders = initialPOOrders.filter(order => {
-    if (activeTab === 'Semua') return true;
-    return order.status === activeTab;
+  const [products, setProducts] = useState(() => {
+    const saved = localStorage.getItem('cendekia_po_products');
+    return saved ? JSON.parse(saved) : preorderProducts;
   });
 
-  const getProductName = (productId, fallbackName) => {
-    const product = productsData?.find(p => p.id === productId);
-    return product ? product.name : fallbackName;
+  const [orders, setOrders] = useState(() => {
+    const saved = localStorage.getItem('cendekia_preorders');
+    return saved ? JSON.parse(saved) : initialPOs;
+  });
+
+  const [selectedProduct, setSelectedProduct] = useState(products[0] || null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem('cendekia_po_products', JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem('cendekia_preorders', JSON.stringify(orders));
+  }, [orders]);
+
+  // Filter participants of the selected product
+  const participants = orders.filter(o => o.productId === selectedProduct?.id);
+  const quotaUsed = participants.length;
+
+  const toggleDP = (orderId) => {
+    setOrders(orders.map(o => {
+      if (o.id === orderId) {
+        return { ...o, dpPaid: !o.dpPaid };
+      }
+      return o;
+    }));
+    if (selectedOrder?.id === orderId) {
+      setSelectedOrder(prev => ({ ...prev, dpPaid: !prev.dpPaid }));
+    }
+  };
+
+  const updateStatusStep = (orderId, step) => {
+    setOrders(orders.map(o => {
+      if (o.id === orderId) {
+        return { ...o, statusStep: Number(step) };
+      }
+      return o;
+    }));
+    if (selectedOrder?.id === orderId) {
+      setSelectedOrder(prev => ({ ...prev, statusStep: Number(step) }));
+    }
+  };
+
+  const steps = [
+    { title: "Pesanan Diterima", desc: "Pemesanan berhasil diverifikasi dan masuk antrian" },
+    { title: "Sedang Diproses / Menunggu Stok", desc: "Distributor sedang memproses stok buku Anda" },
+    { title: "Siap Diambil / Dikirim", desc: "Buku sudah siap diambil di counter atau dalam pengiriman" }
+  ];
+
+  const getTimelineSteps = (statusStep) => {
+    return [
+      { title: 'Pesanan Diterima', time: 'Diverifikasi', done: statusStep >= 0 },
+      { title: 'Sedang Diproses / Menunggu Stok', time: statusStep >= 1 ? 'Selesai' : 'Sedang Berjalan', done: statusStep >= 1 },
+      { title: 'Siap Diambil / Dikirim', time: statusStep >= 2 ? 'Selesai' : 'Belum Dimulai', done: statusStep >= 2 }
+    ];
+  };
+
+  const formatRupiah = (number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
   };
 
   return (
     <div className="p-6 bg-[#F5F6FA] min-h-screen space-y-8 font-sans text-left">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Pre-Order Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Pantau, filter, dan telusuri progres pengerjaan inden komitmen pelanggan.</p>
-        </div>
-        <div className="text-xs text-slate-400 bg-slate-200/60 rounded-lg px-3 py-1.5 font-medium border border-slate-200">
-          💡 Klik baris tabel untuk memfokuskan detail pengerjaan
-        </div>
+      <div>
+        <h1 className="text-3xl font-extrabold text-[#1E2A44] tracking-tight">Kelola Produk Pre-Order & Peserta</h1>
+        <p className="text-sm text-gray-500 mt-1">Pilih kartu produk untuk melihat detail peserta, status uang muka (DP), dan progres timeline.</p>
       </div>
 
-      {/* METRIC STATS CARDS BLOCK */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Antrean PO</p>
-            <h3 className="text-2xl font-black text-gray-900 mt-1">{totalOrders} Antrean</h3>
-          </div>
-          <span className="text-2xl bg-blue-50 p-3 rounded-xl">📦</span>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Sedang Diproses</p>
-            <h3 className="text-2xl font-black text-amber-600 mt-1">{inProduction} Antrean</h3>
-          </div>
-          <span className="text-2xl bg-amber-50 p-3 rounded-xl">⚙️</span>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Siap Dikirim</p>
-            <h3 className="text-2xl font-black text-emerald-600 mt-1">{isDone} Transaksi</h3>
-          </div>
-          <span className="text-2xl bg-emerald-50 p-3 rounded-xl">✅</span>
-        </div>
-      </div>
+      {/* Grid Kartu Produk PO */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {products.map((prod) => {
+          const currentCount = orders.filter(o => o.productId === prod.id).length;
+          const isFull = currentCount >= prod.maxQuota;
+          const isSelected = selectedProduct?.id === prod.id;
 
-      {/* LAYOUT UTAMA */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* TABEL ANTRIAN UTAMA */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="flex justify-between items-center flex-wrap gap-2">
-            <h3 className="text-base font-bold text-gray-800">📋 Antrean Masuk ({filteredOrders.length})</h3>
-            <div className="bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
-              <SegmentFilter 
-                options={['Semua', 'Produksi', 'Q&A Check', 'Selesai']} 
-                activeSegment={activeTab} 
-                onSelect={setActiveTab} 
-              />
+          return (
+            <div 
+              key={prod.id}
+              onClick={() => {
+                setSelectedProduct(prod);
+                setSelectedOrder(null);
+              }}
+              className={`bg-white rounded-3xl p-5 border transition-all cursor-pointer flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md ${
+                isSelected ? 'border-[#B23A2E] ring-2 ring-[#B23A2E]/10' : 'border-gray-100'
+              }`}
+            >
+              <div className="flex gap-4 items-start">
+                <img 
+                  src={prod.image} 
+                  alt={prod.name} 
+                  className="w-16 h-16 object-contain bg-gray-50 rounded-xl"
+                  onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500'; }}
+                />
+                <div className="space-y-1 flex-1">
+                  <span className="text-[9px] bg-[#FBF6EC] border border-[#B8892B]/20 text-[#B8892B] font-bold px-2 py-0.5 rounded uppercase">
+                    ID: {prod.id}
+                  </span>
+                  <h3 className="font-bold text-gray-800 text-xs line-clamp-2">{prod.name}</h3>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-gray-400">Kuota Terisi:</span>
+                  <span className={isFull ? 'text-red-500 font-extrabold' : 'text-gray-700'}>
+                    {currentCount} / {prod.maxQuota} {isFull && '(Penuh)'}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-300 ${isFull ? 'bg-red-500' : 'bg-blue-500'}`}
+                    style={{ width: `${Math.min((currentCount / prod.maxQuota) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {isFull && (
+                <div className="p-2.5 bg-red-50 rounded-xl border border-red-100 text-[10px] text-red-600 font-semibold">
+                  ⚠️ Kuota Penuh. Batch selanjutnya dibuka {prod.nextBatchDate}.
+                </div>
+              )}
             </div>
-          </div>
+          );
+        })}
+      </div>
 
-          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+      {selectedProduct && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Participant Table */}
+          <div className="lg:col-span-8 space-y-4">
+            <h2 className="text-lg font-bold text-gray-800">
+              Peserta Pre-Order: <span className="text-[#B23A2E]">{selectedProduct.name}</span> ({quotaUsed} Orang)
+            </h2>
             <Table>
-              <TableHeader className="bg-gray-50/80">
+              <TableHeader>
                 <TableRow>
-                  <TableHead className="py-4 px-4 font-bold text-gray-400 text-xs">ID PO</TableHead>
-                  <TableHead className="font-bold text-gray-400 text-xs">Pelanggan</TableHead>
-                  <TableHead className="font-bold text-gray-400 text-xs">Produk Inden</TableHead>
-                  <TableHead className="font-bold text-gray-400 text-xs">Uang Muka</TableHead>
-                  <TableHead className="font-bold text-gray-400 text-xs text-center">Status</TableHead>
+                  <TableHead>Nama Peserta</TableHead>
+                  <TableHead>Kontak WA</TableHead>
+                  <TableHead className="text-center">Status DP</TableHead>
+                  <TableHead className="text-center">Tahapan Progres</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOrders.map((order) => (
-                  <TableRow 
-                    key={order.id} 
-                    onClick={() => setSelectedOrder(order)}
-                    className={`cursor-pointer transition-all ${
-                      selectedOrder.id === order.id 
-                        ? 'bg-blue-50/70 hover:bg-blue-50' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <TableCell className="py-4 px-4 font-semibold text-[#4880FF] text-xs">
-                      {order.id} {selectedOrder.id === order.id && '🎯'}
-                    </TableCell>
-                    <TableCell className="font-bold text-gray-800">{order.customer}</TableCell>
-                    <TableCell className="text-gray-500 max-w-[150px] truncate">
-                      {getProductName(order.productId, order.Product)}
-                    </TableCell>
-                    <TableCell className="font-extrabold text-gray-900 text-xs">{order.dp}</TableCell>
-                    <TableCell className="text-center">
-                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold inline-block border ${
-                        order.status === 'Selesai' ? 'bg-green-50 text-green-700 border-green-100' :
-                        order.status === 'Q&A Check' ? 'bg-amber-50 text-amber-700 border-amber-100' : 
-                        'bg-blue-50 text-blue-700 border-blue-100'
-                      }`}>
-                        {order.status}
-                      </span>
+                {participants.length > 0 ? (
+                  participants.map((o) => (
+                    <TableRow 
+                      key={o.id}
+                      onClick={() => setSelectedOrder(o)}
+                      className={`cursor-pointer transition-colors ${selectedOrder?.id === o.id ? 'bg-[#FBF6EC]' : 'hover:bg-gray-50'}`}
+                    >
+                      <TableCell className="font-bold text-gray-800">{o.name}</TableCell>
+                      <TableCell className="font-semibold text-[#B23A2E]">{o.phone}</TableCell>
+                      <TableCell className="text-center">
+                        <span 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleDP(o.id);
+                          }}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold cursor-pointer transition-all ${
+                            o.dpPaid 
+                              ? 'bg-green-50 text-green-700 border border-green-100 hover:bg-green-100' 
+                              : 'bg-red-50 text-red-700 border border-red-100 hover:bg-red-100'
+                          }`}
+                        >
+                          {o.dpPaid ? 'Lunas DP' : 'Belum DP'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                          o.statusStep === 2 ? 'bg-green-50 text-green-700' :
+                          o.statusStep === 1 ? 'bg-amber-50 text-amber-700' :
+                          'bg-blue-50 text-blue-700'
+                        }`}>
+                          {o.statusStep === 2 ? 'Siap Kirim' : o.statusStep === 1 ? 'Diproses' : 'Diterima'}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="p-8 text-center text-gray-400 text-sm">
+                      📭 Belum ada peserta yang mengikuti pre-order produk ini.
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
-        </div>
 
-        {/* SIDEBAR DETIL FOKUS DINAMIS */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-blue-100 shadow-md shadow-blue-500/5 space-y-5 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
-            
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[10px] bg-slate-100 border text-slate-600 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
-                  Fokus Detail Pesanan
-                </span>
-                <h3 className="text-xl font-black text-gray-900 mt-1">{selectedOrder.customer}</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Dibuat pada {selectedOrder.date}</p>
-              </div>
-              <div className="text-right">
-                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
-                  {selectedOrder.id}
-                </span>
-              </div>
-            </div>
+          {/* Edit Panel Drawer */}
+          <div className="lg:col-span-4">
+            {selectedOrder ? (
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#B23A2E]"></div>
+                
+                <div>
+                  <h3 className="text-lg font-black text-gray-900">{selectedOrder.name}</h3>
+                  <p className="text-xs text-gray-400">Order ID: {selectedOrder.id}</p>
+                </div>
 
-            <hr className="border-gray-100" />
+                <div className="space-y-3 text-xs bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                  <p className="text-gray-600"><strong>Besar Uang Muka (DP):</strong> {formatRupiah(selectedOrder.dpAmount)}</p>
+                  <p className="text-gray-600"><strong>Total Tagihan:</strong> {formatRupiah(selectedOrder.totalPrice)}</p>
+                  <p className="text-gray-600"><strong>Catatan Khusus:</strong> "{selectedOrder.customNote || '-'}"</p>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">Produk</p>
-                <p className="text-xs font-bold text-gray-800 mt-0.5 truncate">{getProductName(selectedOrder.productId, selectedOrder.Product)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">Komitmen DP</p>
-                <p className="text-xs font-extrabold text-emerald-600 mt-0.5">{selectedOrder.dp}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">Total Harga</p>
-                <p className="text-xs font-bold text-gray-700 mt-0.5">{selectedOrder.totalPrice}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">Status Produksi</p>
-                <p className="text-xs font-bold text-amber-600 mt-0.5">{selectedOrder.status}</p>
-              </div>
-            </div>
+                <hr className="border-gray-100" />
 
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="font-bold text-gray-500">Estimasi Kesiapan Progres</span>
-                <span className="font-black text-blue-600">{selectedOrder.progress}%</span>
-              </div>
-              <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${selectedOrder.progress}%` }}
-                ></div>
-              </div>
-            </div>
+                {/* Status Update Controls */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Status Pembayaran DP:</label>
+                    <button 
+                      onClick={() => toggleDP(selectedOrder.id)}
+                      className={`w-full py-2 px-4 rounded-xl text-xs font-bold transition-all border ${
+                        selectedOrder.dpPaid 
+                          ? 'bg-green-500 text-white hover:bg-green-600 border-green-600' 
+                          : 'bg-red-500 text-white hover:bg-red-600 border-red-600'
+                      }`}
+                    >
+                      {selectedOrder.dpPaid ? '✓ DP Sudah Dilunasi' : '✗ Belum Melunasi DP'}
+                    </button>
+                  </div>
 
-            <div className="pt-2">
-              <p className="text-xs font-bold text-gray-800 mb-3 flex items-center gap-1.5">
-                <span>🏭</span> Tracking Timeline Manufaktur
-              </p>
-              <div className="bg-white border rounded-xl p-3 max-h-[190px] overflow-y-auto">
-                <OrderTimeline steps={factorySteps} />
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Tahap Progress Pesanan:</label>
+                    <select 
+                      value={selectedOrder.statusStep}
+                      onChange={(e) => updateStatusStep(selectedOrder.id, e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#B23A2E]"
+                    >
+                      <option value="0">Tahap 1: Pesanan Diterima</option>
+                      <option value="1">Tahap 2: Sedang Diproses / Menunggu Stok</option>
+                      <option value="2">Tahap 3: Siap Diambil / Dikirim</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <p className="text-xs font-bold text-gray-800 mb-3">🏭 Visual Progress</p>
+                  <OrderTimeline steps={getTimelineSteps(selectedOrder.statusStep)} />
+                </div>
+
+                <a 
+                  href={`https://wa.me/${selectedOrder.phone}?text=Halo%20${encodeURIComponent(selectedOrder.name)},%20kami%20ingin%20mengabarkan%20update%20pre-order%20Anda%20(${selectedOrder.id}).%20Status%20DP:%20${selectedOrder.dpPaid ? 'LUNAS' : 'BELUM%20LUNAS'}.%20Progres:%20${steps[selectedOrder.statusStep].title}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3 bg-[#25D366] hover:bg-[#20ba5a] text-white text-center font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2"
+                >
+                  💬 Kirim Update via WhatsApp
+                </a>
               </div>
-            </div>
-
-            <div className="pt-1 space-y-3">
-              <FeedbackCard 
-                user="Catatan / Permintaan Khusus" 
-                rating={5} 
-                comment={selectedOrder.customNote || 'Tidak ada catatan khusus.'} 
-              />
-
-              <a 
-                href={`https://wa.me/${selectedOrder.phone}?text=Halo%20${encodeURIComponent(selectedOrder.customer)},%20kami%20ingin%20mengabarkan%20bahwa%20pesanan%20Pre-Order%20Anda%20(${selectedOrder.id})%20saat%20ini%20berstatus:%20${selectedOrder.status}.`}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
-              >
-                💬 Hubungi & Update Progres via WhatsApp
-              </a>
-            </div>
+            ) : (
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 text-center text-gray-400 text-sm">
+                💡 Pilih nama peserta di tabel untuk mengelola data detail individu.
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

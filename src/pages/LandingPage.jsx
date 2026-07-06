@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import LandingNavbar from '../components/LandingNavbar';
 import HeroSection from '../components/HeroSection';
 import { ShuffleHero } from '../components/ui/shuffle-grid';
@@ -17,16 +18,78 @@ const catalogItems = [
   { image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=400", text: "Kamus Bahasa" }
 ];
 
+const promoBanners = [
+  {
+    id: 1,
+    tag: "PROMO BUNDLE",
+    title: "Paket Hemat Belajar Cendekia Pintar",
+    desc: "Diskon 15% untuk pembelian bundle alat tulis + buku kurikulum merdeka SD/SMP/SMA.",
+    bg: "from-[#1E2A44] to-[#B23A2E]"
+  },
+  {
+    id: 2,
+    tag: "TAHUN AJARAN BARU",
+    title: "Back to School Special Deal 2026",
+    desc: "Potongan langsung Rp 50.000 untuk pembelian buku cetak pelajaran sekolah paket lengkap.",
+    bg: "from-[#B23A2E] to-[#B8892B]"
+  },
+  {
+    id: 3,
+    tag: "UPCOMING PRE-ORDER",
+    title: "Kitab Tafsir Jalalain Edisi Lux 2026",
+    desc: "Pre-order dibuka 15 Juli 2026 dengan kuota terbatas! Dapatkan bonus rehal kayu eksklusif.",
+    bg: "from-[#3E6E5E] to-[#1E2A44]"
+  }
+];
+
 export default function LandingPage() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % promoBanners.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
-    <div className="w-full bg-white relative">
+    <div className="w-full bg-white relative text-left">
       {/* Splash Cursor background simulation */}
       <SplashCursor />
 
       {/* Navbar */}
       <LandingNavbar />
 
-     
+      {/* Auto-sliding Banner Section */}
+      <div className="max-w-6xl mx-auto px-6 pt-6">
+        <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${promoBanners[currentSlide].bg} text-white p-8 shadow-lg transition-all duration-700 ease-in-out`}>
+          <div className="absolute right-6 bottom-0 text-8xl opacity-10 font-bold select-none tracking-tighter">
+            Cendekia
+          </div>
+          <div className="relative z-10 space-y-3 max-w-xl">
+            <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+              {promoBanners[currentSlide].tag}
+            </span>
+            <h2 className="text-2xl md:text-3xl font-black tracking-tight transition-all">
+              {promoBanners[currentSlide].title}
+            </h2>
+            <p className="text-xs md:text-sm text-gray-100 font-medium">
+              {promoBanners[currentSlide].desc}
+            </p>
+          </div>
+          {/* Dots Indicator */}
+          <div className="absolute bottom-4 right-6 flex gap-2">
+            {promoBanners.map((_, idx) => (
+              <span 
+                key={idx} 
+                onClick={() => setCurrentSlide(idx)}
+                className={`w-2.5 h-2.5 rounded-full cursor-pointer transition-all ${currentSlide === idx ? 'bg-white scale-125' : 'bg-white/40'}`}
+              ></span>
+            ))}
+          </div>
+        </div>
+      </div>
+
 
       {/* Shuffle Grid Showcase */}
       <ShuffleHero />
