@@ -1,12 +1,44 @@
 // src/pages/CustomerHome.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { calculateLoyaltyTier, loyaltyRules } from '../lib/loyaltyEngine';
 import { transactionsData } from '../data/transactionsData';
 import { Link } from 'react-router-dom';
 
+const promoBanners = [
+  {
+    id: 1,
+    tag: "PROMO BUNDLE",
+    title: "Paket Hemat Belajar Cendekia Pintar",
+    desc: "Diskon 15% untuk pembelian bundle alat tulis + buku kurikulum merdeka SD/SMP/SMA.",
+    bg: "from-[#1E2A44] to-[#B23A2E]"
+  },
+  {
+    id: 2,
+    tag: "TAHUN AJARAN BARU",
+    title: "Back to School Special Deal 2026",
+    desc: "Potongan langsung Rp 50.000 untuk pembelian buku cetak pelajaran sekolah paket lengkap.",
+    bg: "from-[#B23A2E] to-[#B8892B]"
+  },
+  {
+    id: 3,
+    tag: "UPCOMING PRE-ORDER",
+    title: "Kitab Tafsir Jalalain Edisi Lux 2026",
+    desc: "Pre-order dibuka 15 Juli 2026 dengan kuota terbatas! Dapatkan bonus rehal kayu eksklusif.",
+    bg: "from-[#3E6E5E] to-[#1E2A44]"
+  }
+];
+
 export default function CustomerHome() {
   const { user } = useAuth();
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % promoBanners.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, []);
   
   // Get all customer transactions
   const myTrxs = transactionsData.filter(t => t.customerId === user.id || t.customerName === user.name);
@@ -39,6 +71,48 @@ export default function CustomerHome() {
 
   return (
     <div className="space-y-8 font-sans text-left max-w-5xl mx-auto p-4">
+      {/* Auto-sliding Banner Section - Rectangular, Edge-to-Edge, Equal Heights, and Arrow Navigation */}
+      <div className={`relative group overflow-hidden rounded-none -mx-10 -mt-10 w-[calc(100%+5rem)] bg-gradient-to-r ${promoBanners[currentSlide].bg} border-l-[8px] border-[#B8892B] text-white p-8 shadow-md flex items-center justify-between h-44 transition-all select-none`}>
+        {/* Left Arrow Button */}
+        <button 
+          onClick={() => setCurrentSlide((prev) => (prev - 1 + promoBanners.length) % promoBanners.length)}
+          className="absolute left-6 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-base shadow-md transition-all focus:outline-none z-20 opacity-80 hover:scale-105 active:scale-95 cursor-pointer"
+        >
+          ❮
+        </button>
+
+        <div className="relative z-10 space-y-2.5 max-w-2xl px-12 mx-auto text-center md:text-left md:mx-0">
+          <span className="bg-white/20 backdrop-blur-md text-white text-[9px] font-extrabold px-3 py-1 rounded-none uppercase tracking-wider inline-block">
+            {promoBanners[currentSlide].tag}
+          </span>
+          <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
+            {promoBanners[currentSlide].title}
+          </h2>
+          <p className="text-xs md:text-sm text-gray-200 font-medium leading-relaxed">
+            {promoBanners[currentSlide].desc}
+          </p>
+        </div>
+
+        {/* Right Arrow Button */}
+        <button 
+          onClick={() => setCurrentSlide((prev) => (prev + 1) % promoBanners.length)}
+          className="absolute right-6 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-base shadow-md transition-all focus:outline-none z-20 opacity-80 hover:scale-105 active:scale-95 cursor-pointer"
+        >
+          ❯
+        </button>
+
+        {/* Dots Indicator */}
+        <div className="absolute bottom-4 right-12 flex gap-2">
+          {promoBanners.map((_, idx) => (
+            <span 
+              key={idx} 
+              onClick={() => setCurrentSlide(idx)}
+              className={`w-4 h-1.5 rounded-none cursor-pointer transition-all ${currentSlide === idx ? 'bg-white w-6' : 'bg-white/40'}`}
+            ></span>
+          ))}
+        </div>
+      </div>
+
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-[#1E2A44] to-[#B23A2E] text-white rounded-3xl p-8 shadow-lg relative overflow-hidden">
         <div className="absolute right-0 bottom-0 opacity-10 text-9xl select-none">📚</div>
